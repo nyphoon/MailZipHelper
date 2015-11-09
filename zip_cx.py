@@ -3,26 +3,34 @@ import os
 import zipfile
 
 # modified from http://stackoverflow.com/questions/1855095/how-to-create-a-zip-archive-of-a-directory
-def zipdir(path, ziph):
+def write_zipdir(path, ziph):
     # ziph is zipfile handle
     path_len = len( os.path.dirname(path) )
 
     for root, dirs, files in os.walk(path):
         for file in files:
             ziph.write(os.path.join(root, file), os.path.join(root[path_len:], file))
+def write_zipfile(path, filename, ziph):
+    ziph.write(path, filename)
 
-def zip_create(frm, to):
-    ziph = zipfile.ZipFile(to, 'w')
+def zip_create(frm, to=None):
+    head, tail = os.path.split(frm)
+    dst = to if to is not None else tail+'.zip'
+    print tail
+	
+    ziph = zipfile.ZipFile(dst, 'w')
+	
     if os.path.isdir(frm):
-    	zipdir(frm, ziph)
+    	write_zipdir(frm, ziph)
     elif os.path.isfile(frm):
-    	head, tail = os.path.split(frm)
-    	ziph.write(frm, tail)
+    	write_zipfile(frm, tail, ziph)
+    else:
+        raise ValueError
     ziph.close()
 
-def zip_extract(frm):
+def zip_extract(frm, to=None, pwd=None):
     with zipfile.ZipFile(frm, "r") as ziph:
-        ziph.extractall()
+        ziph.extractall(path=to, pwd=pwd)
 
 if __name__ == '__main__':
 	if len(sys.argv) != 2:
@@ -31,7 +39,7 @@ if __name__ == '__main__':
 
 	ch = raw_input("(z)ip or (u)nzip: ")
 	if ch == 'z':
-		zip_create(sys.argv[1], 'test.zip')
+		zip_create(sys.argv[1])
 	elif ch == 'u':
 		zip_extract(sys.argv[1])
 	else:
