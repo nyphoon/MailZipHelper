@@ -6,10 +6,10 @@ import zipfile
 def write_zipdir(path, ziph):
     # ziph is zipfile handle
     path_len = len( os.path.dirname(path) )
-
     for root, dirs, files in os.walk(path):
         for file in files:
             ziph.write(os.path.join(root, file), os.path.join(root[path_len:], file))
+
 def write_zipfile(path, filename, ziph):
     ziph.write(path, filename)
 
@@ -31,6 +31,20 @@ def zip_create(frm, to=None):
 def zip_extract(frm, to=None, pwd=None):
     with zipfile.ZipFile(frm, "r") as ziph:
         ziph.extractall(path=to, pwd=pwd)
+        
+class ZipCreate(object):
+    def __init__(self, zip_name):
+        self.ziph = zipfile.ZipFile(zip_name, 'w')
+    def write(self, frm):
+        if os.path.isdir(frm):
+            write_zipdir(frm, self.ziph)
+        elif os.path.isfile(frm):
+            write_zipfile(frm, os.path.basename(frm), self.ziph)
+        else:
+            raise ValueError
+    def finish(self):
+        self.ziph.close()
+        
 
 if __name__ == '__main__':
 	if len(sys.argv) != 2:
