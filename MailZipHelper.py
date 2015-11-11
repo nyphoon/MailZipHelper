@@ -12,6 +12,45 @@ import zip_cx
 TARGET_TYPE_URI_LIST = 80
 dnd_list = [ ( 'text/uri-list', 0, TARGET_TYPE_URI_LIST ) ]
 
+xpm_data = [
+"32 32 3 1",
+"       c None",
+".      c #222222222222",
+"X      c #EEEEEEEEEEEE",
+"                                ",
+"  ................              ",
+"  .            ..               ",
+"  .           ..                ",
+"  .          ..                 ",
+"  .         ..                  ",
+"  .          ..                 ",
+"  .           ..                ",
+"  .            ..               ",
+"  .    .        ..              ",
+"  .   ...        ..             ",
+"  .  .. ..        ..            ",
+"  . ..   ..        ..           ",
+"  ...     ..        ..          ",
+"  ..       ..        ..         ",
+"  .         ..                  ",
+"             ..                 ",
+"              ..                ",
+"               ..               ",
+"                ..  ......      ",
+"                    .XXX.X.     ",
+"                    .XXX.XX.    ",
+"                    .XXX.XXX.   ",
+"                    .XXX.....   ",
+"                    .XXXXXXX.   ",
+"                    .XXXXXXX.   ",
+"                    .XXXXXXX.   ",
+"                    .XXXXXXX.   ",
+"                    .XXXXXXX.   ",
+"                    .........   ",
+"                                ",
+"                                "
+]
+
 class MailZipHelper:
     file_dict = {}
     
@@ -21,23 +60,28 @@ class MailZipHelper:
         #UI
         self.liststore.clear()
         
+        self.treeview.hide()
         self.btn_clear.hide()
         self.btn_create.hide()
+        self.box_input_indication.show_all()
 
-    def file_add(self, treeview, path):
+    def file_add(self, path):
         basename = os.path.basename(path)
         # same file name cannot be in the same root folder
         if basename in self.file_dict:
             # to do: warning message
+            print('same file name')
             return
         #data
         self.file_dict[basename] = path
         #UI
-        model = treeview.get_model()
-        model.append([str(len(model)+1), basename])
-        
         self.btn_clear.show()
         self.btn_create.show()
+        self.treeview.show()
+        self.box_input_indication.hide_all()
+        
+        model = self.treeview.get_model()
+        model.append([str(len(model)+1), basename])
         
     # modified from http://faq.pygtk.org/index.py?req=show&file=faq23.031.htp
     def get_file_path_from_dnd_dropped_uri(self, uri):
@@ -61,8 +105,7 @@ class MailZipHelper:
         uri_splitted = uri.split() # we may have more than one file dropped
         for uri in uri_splitted:
             path = self.get_file_path_from_dnd_dropped_uri(uri)
-            if widget is self.treeview:
-                self.file_add(widget, path)
+            self.file_add(path)
         
     def cb_btn_add(self, widget, data=None):
         print "Add"
@@ -153,23 +196,40 @@ class MailZipHelper:
         self.window.add(self.btn_create)
         self.box_input_h3.pack_start(self.btn_create, True, True, 0)
         
-        # treeview
+        # treeview (file list)
         self.liststore = gtk.ListStore(str, str)
         self.treeview = gtk.TreeView(self.liststore)
         self.cell = gtk.CellRendererText()
         self.cell1 = gtk.CellRendererText()
         self.tvcolumn = gtk.TreeViewColumn('#', self.cell, text=0)
         self.tvcolumn1 = gtk.TreeViewColumn('File', self.cell1, text=1)
-        
         self.treeview.append_column(self.tvcolumn)
         self.treeview.append_column(self.tvcolumn1)
-        
         self.treeview.set_search_column(1)
-        
-        self.treeview.drag_dest_set( gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_HIGHLIGHT | 
-                                    gtk.DEST_DEFAULT_DROP, dnd_list, gtk.gdk.ACTION_DEFAULT)
-        self.treeview.connect("drag_data_received", self.on_drag_data_received)
         self.box_input_h2.pack_start(self.treeview, True, True, 0)
+        
+        
+        # Set input box 2 handle DnD
+        self.box_input_h2.drag_dest_set( gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_HIGHLIGHT | 
+                                    gtk.DEST_DEFAULT_DROP, dnd_list, gtk.gdk.ACTION_DEFAULT)
+        self.box_input_h2.connect("drag_data_received", self.on_drag_data_received)
+        
+        # indication
+        self.box_input_indication = gtk.VBox(False, 0)
+        self.box_input_h2.pack_start(self.box_input_indication, False, False, 0)
+        # picture
+        pbuf = gtk.gdk.pixbuf_new_from_xpm_data(xpm_data)
+        new = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, 32*6,32*6 )
+        pbuf.scale(new, 0,0, 32*6,32*6, 0,0, 6,6, gtk.gdk.INTERP_NEAREST)
+        image = gtk.Image()
+        image.set_from_pixbuf(new)
+        self.box_input_indication.pack_start(image, False, False, 0)
+        # text
+        label = gtk.Label()
+        label.set_markup('<span size="20000">Drag&amp;Drop Your File Here</span>')
+        self.box_input_indication.pack_start(label, False, False, 0)
+        
+        self.box_input_indication.show_all()
         
         # This will cause the window to be destroyed by calling
         # gtk_widget_destroy(window) when "clicked".  Again, the destroy
@@ -178,7 +238,7 @@ class MailZipHelper:
 
         self.box_input.show()
         self.box_input_h1.show()
-        self.box_input_h2.show_all()
+        self.box_input_h2.show()
         self.box_input_h3.show()
         self.window.show()
 
