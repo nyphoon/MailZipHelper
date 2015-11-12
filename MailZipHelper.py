@@ -7,6 +7,7 @@ import gtk
 
 import urllib
 import os
+import time
 
 import zip_cx
 TARGET_TYPE_URI_LIST = 80
@@ -59,11 +60,11 @@ class MailZipHelper:
         self.file_dict.clear()
         #UI
         self.liststore.clear()
-        
         self.treeview.hide()
-        self.btn_clear.hide()
-        self.btn_create.hide()
         self.box_input_indication.show_all()
+        self.box_input_h2.show()
+        self.box_input_h3.hide_all()
+        self.box_input_h4.hide_all()
 
     def file_add(self, path):
         basename = os.path.basename(path)
@@ -74,14 +75,23 @@ class MailZipHelper:
             return
         #data
         self.file_dict[basename] = path
+        self.output_name = basename+'.zip.'+time.strftime('%Y%m%d')+'nopwd'
         #UI
-        self.btn_clear.show()
-        self.btn_create.show()
-        self.treeview.show()
         self.box_input_indication.hide_all()
-        
         model = self.treeview.get_model()
         model.append([str(len(model)+1), basename])
+        self.treeview.show()
+        
+        # self.etr_output_name.set_flags(gtk.CAN_FOCUS)
+        # self.etr_output_name.grab_focus()
+        # self.etr_output_name.set_visibility(True)
+        # self.etr_output_name.set_editable(True)
+        # self.etr_output_name.set_text(basename+'.zip.'+time.strftime('%Y%m%d'))
+        # self.etr_output_name.select_region(0, len(basename))
+        
+        self.lbl_output_name.set_text('Zip to: '+self.output_name)
+        self.box_input_h3.show_all()
+        self.box_input_h4.show_all()
         
     # modified from http://faq.pygtk.org/index.py?req=show&file=faq23.031.htp
     def get_file_path_from_dnd_dropped_uri(self, uri):
@@ -114,14 +124,13 @@ class MailZipHelper:
     def cb_btn_clear(self, widget, data=None):
         print "clear"
         self.file_clear()
-    # ref: pyGTK org helloworld sample
-    # This is a callback function. The data arguments are ignored
-    # in this example. More on callbacks below.
     def cb_btn_create(self, widget, data=None):
         print "Create"
-        zipfile = zip_cx.ZipCreate('test.zip')
+        # zipfile = zip_cx.ZipCreate(self.etr_output_name.get_text())
+        zipfile = zip_cx.ZipCreate(self.output_name)
         for path in self.file_dict:
-            zipfile.write(path)
+            print('zip write: {}'.format(self.file_dict[path]))
+            zipfile.write(self.file_dict[path])
         zipfile.finish()
 
     def delete_event(self, widget, event, data=None):
@@ -173,10 +182,14 @@ class MailZipHelper:
         self.box_input_h2.set_usize(320,240)
         self.box_input_h3 = gtk.HBox(False, 0)
         self.box_input_h3.set_usize(320,40)
+        self.box_input_h4 = gtk.HBox(False, 0)
+        self.box_input_h4.set_usize(320,40)
         self.box_input.pack_start(self.box_input_h1, False, False, 0)
         self.box_input.pack_start(self.box_input_h2, False, False, 0)
         self.box_input.pack_start(self.box_input_h3, False, False, 0)
+        self.box_input.pack_start(self.box_input_h4, False, False, 0)
         
+        # @ horizon 1
         # button [Add]
         self.btn_add = gtk.Button("Add")
         self.btn_add.connect("clicked", self.cb_btn_add, None)
@@ -185,17 +198,7 @@ class MailZipHelper:
         # self.btn_add.connect("file-set", self.callback, None)
         self.box_input_h1.pack_start(self.btn_add, True, True, 0)
         
-        # button [Clear]
-        self.btn_clear = gtk.Button("Clear")
-        self.btn_clear.connect("clicked", self.cb_btn_clear, None)
-        self.box_input_h1.pack_start(self.btn_clear, False, False, 0)
-        
-        # button [Create]
-        self.btn_create = gtk.Button("Create")
-        self.btn_create.connect("clicked", self.cb_btn_create, None)
-        self.window.add(self.btn_create)
-        self.box_input_h3.pack_start(self.btn_create, True, True, 0)
-        
+        # @ horizon 2
         # treeview (file list)
         self.liststore = gtk.ListStore(str, str)
         self.treeview = gtk.TreeView(self.liststore)
@@ -208,8 +211,7 @@ class MailZipHelper:
         self.treeview.set_search_column(1)
         self.box_input_h2.pack_start(self.treeview, True, True, 0)
         
-        
-        # Set input box 2 handle DnD
+        # set horizon 2 handle DnD
         self.box_input_h2.drag_dest_set( gtk.DEST_DEFAULT_MOTION | gtk.DEST_DEFAULT_HIGHLIGHT | 
                                     gtk.DEST_DEFAULT_DROP, dnd_list, gtk.gdk.ACTION_DEFAULT)
         self.box_input_h2.connect("drag_data_received", self.on_drag_data_received)
@@ -217,29 +219,45 @@ class MailZipHelper:
         # indication
         self.box_input_indication = gtk.VBox(False, 0)
         self.box_input_h2.pack_start(self.box_input_indication, False, False, 0)
-        # picture
+        # - picture
         pbuf = gtk.gdk.pixbuf_new_from_xpm_data(xpm_data)
         new = gtk.gdk.Pixbuf(gtk.gdk.COLORSPACE_RGB, True, 8, 32*6,32*6 )
         pbuf.scale(new, 0,0, 32*6,32*6, 0,0, 6,6, gtk.gdk.INTERP_NEAREST)
         image = gtk.Image()
         image.set_from_pixbuf(new)
         self.box_input_indication.pack_start(image, False, False, 0)
-        # text
+        # - text
         label = gtk.Label()
         label.set_markup('<span size="20000">Drag&amp;Drop Your File Here</span>')
         self.box_input_indication.pack_start(label, False, False, 0)
         
         self.box_input_indication.show_all()
         
+        # @ horizon 3
+        # label [output_name title]
+        self.lbl_output_name = gtk.Label('Zip to:')
+        self.box_input_h3.pack_start(self.lbl_output_name, False, False, 0)
+        # entry [output_name]
+        # self.etr_output_name = gtk.Entry(max=82)
+        # self.box_input_h3.pack_start(self.etr_output_name, True, True, 0)
+        
+        # @ horizon 4
+        # button [Create]
+        self.btn_create = gtk.Button("Create")
+        self.btn_create.connect("clicked", self.cb_btn_create, None)
+        self.box_input_h4.pack_start(self.btn_create, True, True, 0)
+        # button [Clear]
+        self.btn_clear = gtk.Button("Clear")
+        self.btn_clear.connect("clicked", self.cb_btn_clear, None)
+        self.box_input_h4.pack_start(self.btn_clear, False, False, 0)
+        
         # This will cause the window to be destroyed by calling
         # gtk_widget_destroy(window) when "clicked".  Again, the destroy
         # signal could come from here, or the window manager.
         #self.button.connect_object("clicked", gtk.Widget.destroy, self.window)
 
+        self.file_clear()
         self.box_input.show()
-        self.box_input_h1.show()
-        self.box_input_h2.show()
-        self.box_input_h3.show()
         self.window.show()
 
     def main(self):

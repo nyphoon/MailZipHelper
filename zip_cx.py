@@ -17,13 +17,13 @@ def zip_create(frm, to=None):
     head, tail = os.path.split(frm)
     dst = to if to is not None else tail+'.zip'
     print tail
-	
+    
     ziph = zipfile.ZipFile(dst, 'w')
-	
+    
     if os.path.isdir(frm):
-    	write_zipdir(frm, ziph)
+        write_zipdir(frm, ziph)
     elif os.path.isfile(frm):
-    	write_zipfile(frm, tail, ziph)
+        write_zipfile(frm, tail, ziph)
     else:
         raise ValueError
     ziph.close()
@@ -47,14 +47,14 @@ class ZipCreate(object):
         
 
 if __name__ == '__main__':
-	if len(sys.argv) != 2:
-		print('need a argument')
-		exit(0)
+    if len(sys.argv) != 2:
+        print('need a argument')
+        exit(0)
 
-	ch = raw_input("(z)ip or (u)nzip: ")
-	if ch == 'z':
-		zip_create(sys.argv[1])
-	elif ch == 'u':
-		zip_extract(sys.argv[1])
-	else:
-		print('bad choice')
+    ch = raw_input("(z)ip or (u)nzip: ")
+    if ch == 'z':
+        zip_create(sys.argv[1])
+    elif ch == 'u':
+        zip_extract(sys.argv[1])
+    else:
+        print('bad choice')
